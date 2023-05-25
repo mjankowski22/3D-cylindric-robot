@@ -45,22 +45,24 @@ class RobotSimulation(ShowBase):
         
         self.disable_mouse()
         # Set initial position and orientation of the robot
-        self.camera_r = 30
+        self.camera_r = 35
         self.camera_t = 0.55
         self.camera_fi = 0
 
         self.speed_up =0.1
-        self.speed_rotate = 0.1
+        self.speed_rotate = 0.02
         self.speed_expand =0.01
         self.speed_forward = 0.1
         
         self.camera.set_pos(self.camera_r*math.cos(self.camera_t)*math.cos(self.camera_fi), self.camera_r*math.cos(self.camera_t)*math.sin(self.camera_fi), self.camera_r*math.sin(self.camera_t))  # Initial camera position
         self.camera.look_at(Point3(0, 0, 0))  # Look at the origin
         
-        self.accept('arrow_up-repeat', self.zoom_in)
-        self.accept('arrow_down-repeat', self.zoom_out)
-        self.accept('arrow_left-repeat', self.rotate_left)
-        self.accept('arrow_right-repeat', self.rotate_right)
+        self.accept('arrow_up-repeat', self.rotate_up)
+        self.accept('arrow_down-repeat', self.rotate_down)
+        self.accept(',',self.zoom_in)
+        self.accept('.',self.zoom_out)
+        self.accept('arrow_left-repeat', self.rotate_right)
+        self.accept('arrow_right-repeat', self.rotate_left)
         self.accept('w-repeat',self.move_up)
         self.accept('s-repeat',self.move_down)
         self.accept('a-repeat',self.robot_rotate_left)
@@ -69,6 +71,21 @@ class RobotSimulation(ShowBase):
         self.accept('e-repeat',self.go_backward)
         self.accept('r-repeat',self.reduce)
         self.accept('t-repeat',self.expand)
+
+        self.accept(',-repeat',self.zoom_in)
+        self.accept('.-repeat',self.zoom_out)
+        self.accept('arrow_up', self.rotate_up)
+        self.accept('arrow_down', self.rotate_down)
+        self.accept('arrow_left', self.rotate_right)
+        self.accept('arrow_right', self.rotate_left)
+        self.accept('w',self.move_up)
+        self.accept('s',self.move_down)
+        self.accept('a',self.robot_rotate_left)
+        self.accept('d',self.robot_rotate_right)
+        self.accept('q',self.go_forward)
+        self.accept('e',self.go_backward)
+        self.accept('r',self.reduce)
+        self.accept('t',self.expand)
         
 
         self.rotate_speed = 0.2 # Adjust the speed of rotation
@@ -77,12 +94,14 @@ class RobotSimulation(ShowBase):
         self.taskMgr.add(self.update_camera_task, 'update_camera_task')
     
     def zoom_in(self):
-        self.camera_r=self.camera_r*0.9
-        self.camera.set_pos(self.camera.get_pos() * 0.9)  # Zoom in by scaling the position
+        if self.camera_r>22:
+            self.camera_r=self.camera_r*0.9
+            self.camera.set_pos(self.camera.get_pos() * 0.9)  # Zoom in by scaling the position
     
     def zoom_out(self):
-        self.camera_r=self.camera_r*1.1
-        self.camera.set_pos(self.camera.get_pos() * 1.1)  # Zoom out by scaling the position
+        if self.camera_r<45:
+            self.camera_r=self.camera_r*1.1
+            self.camera.set_pos(self.camera.get_pos() * 1.1)  # Zoom out by scaling the position
     
     def rotate_left(self):
         self.camera_fi += self.rotate_speed  # Increment the rotation angle
@@ -92,6 +111,16 @@ class RobotSimulation(ShowBase):
         self.camera_fi -= self.rotate_speed  # Decrement the rotation angle
         self.rotate_camera()
     
+    def rotate_up(self):
+        if self.camera_t<1.54:
+            self.camera_t+=self.rotate_speed
+            self.rotate_camera()
+
+    def rotate_down(self):
+        if self.camera_t >0.3:
+            self.camera_t-=self.rotate_speed
+            self.rotate_camera()
+
     def rotate_camera(self):
         self.camera.set_pos(self.camera_r*math.cos(self.camera_t)*math.cos(self.camera_fi), self.camera_r*math.cos(self.camera_t)*math.sin(self.camera_fi), self.camera_r*math.sin(self.camera_t))
         self.camera.look_at(Point3(0, 0, 0))  # Keep looking at the origin
@@ -162,7 +191,7 @@ class RobotSimulation(ShowBase):
         r_c_r = math.sqrt(pos_c_r[0]**2+pos_c_r[1]**2)
         fi_c_r = math.atan2(pos_c_r[1],pos_c_r[0])
         
-        if math.sqrt((pos_c_l[0]-pos_c_r[0])**2+(pos_c_l[1]-pos_c_r[1])**2)<1:
+        if math.sqrt((pos_c_l[0]-pos_c_r[0])**2+(pos_c_l[1]-pos_c_r[1])**2)<1.35:
             fi_c_l+=self.speed_expand
             fi_c_r-=self.speed_expand
             self.collector_left.set_pos(r_c_l*math.cos(fi_c_l), r_c_l*math.sin(fi_c_l), pos_c_l[2])
