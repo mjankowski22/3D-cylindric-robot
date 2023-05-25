@@ -21,7 +21,6 @@ class RobotSimulation(ShowBase):
         self.robot = self.loader.loadModel("Robot.gltf")
         self.robot.reparentTo(self.render)
         self.robot.setPos(0, 0, 1)
-
         print(self.robot.get_children())
         self.cone = self.robot.get_children()[0]
         self.cylinder = self.robot.get_children()[1]
