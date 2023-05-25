@@ -18,10 +18,10 @@ class RobotSimulation(ShowBase):
         simplepbr.init()
 
         # Load the robot model``
-        self.robot = self.loader.loadModel("Robot.gltf")
+        self.robot = self.loader.loadModel("Robot1.gltf")
         self.robot.reparentTo(self.render)
         self.robot.setPos(0, 0, 1)
-        print(self.robot.get_children())
+        
         self.cone = self.robot.get_children()[0]
         self.cylinder = self.robot.get_children()[1]
         self.up_cylinder = self.robot.get_children()[2]
@@ -31,16 +31,17 @@ class RobotSimulation(ShowBase):
         self.collector_right = self.robot.get_children()[6]
         self.collector_left = self.robot.get_children()[7]
 
+
         self.to_move_up_down = [self.collector_base,self.collector_right,self.collector_left,self.first_arm,self.second_arm,self.up_cylinder]
         self.to_rotate = [self.collector_base,self.collector_right,self.collector_left,self.first_arm,self.second_arm]
-        self.to_go_forward = [self.collector_base,self.collector_right,self.collector_left,self.second_arm]
+        self.to_go_forward = [self.collector_base,self.second_arm]
         self.to_expand = [self.collector_left,self.collector_right]
         
 
 
-        self.floor = self.loader.loadModel("Floor.gltf")
-        self.floor.reparentTo(self.render)
-        self.floor.setPos(0,0,0)
+        # self.floor = self.loader.loadModel("Floor.gltf")
+        # self.floor.reparentTo(self.render)
+        # self.floor.setPos(0,0,0)
         
         self.disable_mouse()
         # Set initial position and orientation of the robot
@@ -98,12 +99,14 @@ class RobotSimulation(ShowBase):
     def move_up(self):
         for element in self.to_move_up_down:
             pos = list(element.getPos())
-            element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
+            if pos[2]<=7.1:
+                element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
 
     def move_down(self):
         for element in self.to_move_up_down:
             pos = list(element.getPos())
-            element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)
+            if pos[2]>=1.9:
+                element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)
 
     def robot_rotate_left(self):
         for element in self.to_rotate:
@@ -124,20 +127,32 @@ class RobotSimulation(ShowBase):
             element.setH(fi/(2*math.pi)*360)
 
     def go_forward(self):
-        for element in self.to_go_forward:
-            pos = list(element.getPos())
-            actual_r = math.sqrt(pos[0]**2+pos[1]**2)
-            fi = math.atan2(pos[1],pos[0])
-            actual_r +=self.speed_forward
-            element.set_pos(actual_r*math.cos(fi), actual_r*math.sin(fi), pos[2])
+        
+        if math.sqrt(self.second_arm.getPos()[0]**2+ self.second_arm.getPos()[1]**2) <=5.8:
+            appends_left = [self.collector_left.getPos()[0]-self.collector_base.getPos()[0],self.collector_left.getPos()[1]-self.collector_base.getPos()[1]]
+            appends_right = [self.collector_right.getPos()[0]-self.collector_base.getPos()[0],self.collector_right.getPos()[1]-self.collector_base.getPos()[1]]
+
+            for element in self.to_go_forward:
+                pos = list(element.getPos())
+                actual_r = math.sqrt(pos[0]**2+pos[1]**2)
+                fi = math.atan2(pos[1],pos[0])
+                actual_r +=self.speed_forward
+                element.set_pos(actual_r*math.cos(fi), actual_r*math.sin(fi), pos[2])
+            self.collector_left.set_pos(self.collector_base.getPos()[0]+appends_left[0],self.collector_base.getPos()[1]+appends_left[1],self.collector_left.getPos()[2])
+            self.collector_right.set_pos(self.collector_base.getPos()[0]+appends_right[0],self.collector_base.getPos()[1]+appends_right[1],self.collector_right.getPos()[2])
 
     def go_backward(self):
-        for element in self.to_go_forward:
-            pos = list(element.getPos())
-            actual_r = math.sqrt(pos[0]**2+pos[1]**2)
-            fi = math.atan2(pos[1],pos[0])
-            actual_r -=self.speed_forward
-            element.set_pos(actual_r*math.cos(fi), actual_r*math.sin(fi), pos[2])
+        appends_left = [self.collector_left.getPos()[0]-self.collector_base.getPos()[0],self.collector_left.getPos()[1]-self.collector_base.getPos()[1]]
+        appends_right = [self.collector_right.getPos()[0]-self.collector_base.getPos()[0],self.collector_right.getPos()[1]-self.collector_base.getPos()[1]]
+        if math.sqrt(self.second_arm.getPos()[0]**2+ self.second_arm.getPos()[1]**2) >=2.5:
+            for element in self.to_go_forward:
+                pos = list(element.getPos())
+                actual_r = math.sqrt(pos[0]**2+pos[1]**2)
+                fi = math.atan2(pos[1],pos[0])
+                actual_r -=self.speed_forward
+                element.set_pos(actual_r*math.cos(fi), actual_r*math.sin(fi), pos[2])
+            self.collector_left.set_pos(self.collector_base.getPos()[0]+appends_left[0],self.collector_base.getPos()[1]+appends_left[1],self.collector_left.getPos()[2])
+            self.collector_right.set_pos(self.collector_base.getPos()[0]+appends_right[0],self.collector_base.getPos()[1]+appends_right[1],self.collector_right.getPos()[2])
 
     def expand(self):
         pos_c_l = list(self.collector_left.getPos())
@@ -146,6 +161,7 @@ class RobotSimulation(ShowBase):
         fi_c_l = math.atan2(pos_c_l[1],pos_c_l[0])
         r_c_r = math.sqrt(pos_c_r[0]**2+pos_c_r[1]**2)
         fi_c_r = math.atan2(pos_c_r[1],pos_c_r[0])
+        
         if math.sqrt((pos_c_l[0]-pos_c_r[0])**2+(pos_c_l[1]-pos_c_r[1])**2)<1:
             fi_c_l+=self.speed_expand
             fi_c_r-=self.speed_expand
