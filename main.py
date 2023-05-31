@@ -18,7 +18,7 @@ class RobotSimulation(ShowBase):
         simplepbr.init()
 
         # Load the robot model``
-        self.robot = self.loader.loadModel("Robot1.gltf")
+        self.robot = self.loader.loadModel("robot2wersja.gltf")
         self.robot.reparentTo(self.render)
         self.robot.setPos(0, 0, 1)
         
