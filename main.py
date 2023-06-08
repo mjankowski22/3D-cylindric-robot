@@ -7,7 +7,8 @@ from panda3d.core import CollisionHandlerQueue
 from panda3d.core import CollisionRay,DirectionalLight
 import math
 import simplepbr
-
+from direct.gui.DirectGui import *
+from time import sleep
 
 
 
@@ -39,13 +40,79 @@ class RobotSimulation(ShowBase):
         self.to_go_forward = [self.collector_base,self.second_arm]
         self.to_expand = [self.collector_left,self.collector_right]
         
+        self.record = []
+        self.recording = False
 
+        self.buttonRecord = DirectButton(text="Rozpocznij nagrywanie",
+            scale=0.1,
+            frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
+            frameSize=(-2.3,2.3, -0.5, 0.5),  # Width and height of the button
+            pos=(-0.9, 0, 0.9),  # Position of the button (upper-left corner)
+            text_scale=0.4,  # Scaling of the button text
+            text_pos=(0, -0.05),
+            command=self.start_recording  # Position of the text on the button
+        )
+        self.buttonRecord.setPos(1.1, 0, 0.9)
+
+        self.buttonPlay = DirectButton(text="Odtworz",
+            scale=0.1,
+            frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
+            frameSize=(-1, 1, -0.5, 0.5),  # Width and height of the button
+            pos=(-0.9, 0, 0.9),  # Position of the button (upper-left corner)
+            text_scale=0.4,  # Scaling of the button text
+            text_pos=(0, -0.05),
+            command=self.play 
+        )
+        self.buttonPlay.setPos(1.23, 0, -0.9)
+
+        self.buttonReset = DirectButton(text="Reset kamery",
+            scale=0.1,
+            frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
+            frameSize=(-1.4, 1.4, -0.5, 0.5),  # Width and height of the button
+            pos=(-0.9, 0, 0.9),  # Position of the button (upper-left corner)
+            text_scale=0.4,  # Scaling of the button text
+            text_pos=(0, -0.05), 
+            command=self.camera_reset # Position of the text on the button
+        )
+        self.buttonReset.setPos(-1.2, 0, 0.9)
+
+        self.buttonMove = DirectButton(text="Ruch",
+            scale=0.1,
+            frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
+            frameSize=(-1, 1, -0.5, 0.5),  # Width and height of the button
+            pos=(-1.21, 0, -0.7),  # Position of the button (upper-left corner)
+            text_scale=0.4,  # Scaling of the button text
+            text_pos=(0, -0.05),  # Position of the text on the button
+        )
+        self.buttonMove.setPos(-1.2, 0, -0.7)
+
+        self.x_input = DirectEntry(
+            scale=0.06,
+            initialText="x",
+            width=5,
+            pos=(-1.3, 0, -0.9)
+        )
+        self.y_input = DirectEntry(
+            scale=0.06,
+            initialText="y",
+            width=5,
+            pos=(-0.9, 0, -0.9)
+        )
+        self.z_input = DirectEntry(
+            scale=0.06,
+            initialText="z",
+            width=5,
+            pos=(-0.5, 0, -0.9)
+        )
+        self.inputs = [self.x_input,self.y_input,self.z_input]
+        
+        
         
         self.disable_mouse()
         # Set initial position and orientation of the robot
         self.camera_r = 35
         self.camera_t = 0.55
-        self.camera_fi = 0
+        self.camera_fi = -0.15
 
         self.speed_up =0.1
         self.speed_rotate = 0.02
@@ -84,6 +151,8 @@ class RobotSimulation(ShowBase):
         self.accept('e',self.go_backward)
         self.accept('r',self.reduce)
         self.accept('t',self.expand)
+
+        self.accept('mouse1',self.checkClick)
         
 
         self.rotate_speed = 0.2 # Adjust the speed of rotation
@@ -117,25 +186,40 @@ class RobotSimulation(ShowBase):
             self.camera_t-=self.rotate_speed
             self.rotate_camera()
 
+    def camera_reset(self):
+        self.camera_r = 35
+        self.camera_t = 0.55
+        self.camera_fi = -0.15
+        self.camera.set_pos(self.camera_r*math.cos(self.camera_t)*math.cos(self.camera_fi), self.camera_r*math.cos(self.camera_t)*math.sin(self.camera_fi), self.camera_r*math.sin(self.camera_t))  # Initial camera position
+        self.camera.look_at(Point3(0, 0, 0))  # Look at the origin
+
     def rotate_camera(self):
         self.camera.set_pos(self.camera_r*math.cos(self.camera_t)*math.cos(self.camera_fi), self.camera_r*math.cos(self.camera_t)*math.sin(self.camera_fi), self.camera_r*math.sin(self.camera_t))
         self.camera.look_at(Point3(0, 0, 0))  # Keep looking at the origin
 
     def move_up(self):
+        if self.recording:
+            self.record.append(self.move_up)
         for element in self.to_move_up_down:
             pos = list(element.getPos())
             if pos[2]<=7.1 :
                 element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
 
     def move_down(self):
+        if self.recording:
+            self.record.append(self.move_down)
         if  not self.check_collision_with_barell_left() and not self.check_collision_with_barell_right() and not self.check_collision_with_table_left() and not self.check_collision_with_table_right() and not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle():
+            
             for element in self.to_move_up_down:
                 pos = list(element.getPos())
                 if pos[2]>=1.9 :
                     element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)
 
     def robot_rotate_left(self):
+        if self.recording:
+            self.record.append(self.robot_rotate_left)
         if not self.check_collision_with_barell_left() and not self.check_collision_with_table_left() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle():
+            
             for element in self.to_rotate:
                 pos = list(element.getPos())
                 actual_fi = math.atan2(pos[1],pos[0])
@@ -145,7 +229,10 @@ class RobotSimulation(ShowBase):
                 element.setH(fi/(2*math.pi)*360)
 
     def robot_rotate_right(self):
+        if self.recording:
+            self.record.append(self.robot_rotate_right)
         if not self.check_collision_with_barell_right() and not self.check_collision_with_table_right() and not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_middle():
+            
             for element in self.to_rotate:
                 pos = list(element.getPos())
                 actual_fi = math.atan2(pos[1],pos[0])
@@ -155,7 +242,10 @@ class RobotSimulation(ShowBase):
                 element.setH(fi/(2*math.pi)*360)
 
     def go_forward(self):
+        if self.recording:
+            self.record.append(self.go_forward)
         if  not self.check_collision_with_barell_left() and not self.check_collision_with_barell_right() and not self.check_collision_with_table_left() and not self.check_collision_with_table_right() and not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle():
+            
             if math.sqrt(self.second_arm.getPos()[0]**2+ self.second_arm.getPos()[1]**2) <=5.8:
                 appends_left = [self.collector_left.getPos()[0]-self.collector_base.getPos()[0],self.collector_left.getPos()[1]-self.collector_base.getPos()[1]]
                 appends_right = [self.collector_right.getPos()[0]-self.collector_base.getPos()[0],self.collector_right.getPos()[1]-self.collector_base.getPos()[1]]
@@ -170,6 +260,8 @@ class RobotSimulation(ShowBase):
                 self.collector_right.set_pos(self.collector_base.getPos()[0]+appends_right[0],self.collector_base.getPos()[1]+appends_right[1],self.collector_right.getPos()[2])
 
     def go_backward(self):
+        if self.recording:
+            self.record.append(self.go_backward)
         appends_left = [self.collector_left.getPos()[0]-self.collector_base.getPos()[0],self.collector_left.getPos()[1]-self.collector_base.getPos()[1]]
         appends_right = [self.collector_right.getPos()[0]-self.collector_base.getPos()[0],self.collector_right.getPos()[1]-self.collector_base.getPos()[1]]
         if math.sqrt(self.second_arm.getPos()[0]**2+ self.second_arm.getPos()[1]**2) >=2.5:
@@ -183,7 +275,8 @@ class RobotSimulation(ShowBase):
             self.collector_right.set_pos(self.collector_base.getPos()[0]+appends_right[0],self.collector_base.getPos()[1]+appends_right[1],self.collector_right.getPos()[2])
 
     def expand(self):
-        
+        if self.recording:
+            self.record.append(self.expand)
         pos_c_l = list(self.collector_left.getPos())
         pos_c_r = list(self.collector_right.getPos())
         r_c_l = math.sqrt(pos_c_l[0]**2+pos_c_l[1]**2)
@@ -199,6 +292,8 @@ class RobotSimulation(ShowBase):
 
             
     def reduce(self):
+        if self.recording:
+            self.record.append(self.reduce)
         pos_c_l = list(self.collector_left.getPos())
         pos_c_r = list(self.collector_right.getPos())
         r_c_l = math.sqrt(pos_c_l[0]**2+pos_c_l[1]**2)
@@ -314,6 +409,50 @@ class RobotSimulation(ShowBase):
             fi+=math.pi/36
         return False
     
+    def checkClick(self):
+        # Check if the mouse was clicked outside of the text inputs
+        mouse_pos = self.mouseWatcherNode.getMouse()
+        mouse_x = mouse_pos[0]
+        mouse_y = mouse_pos[1]
+        for input_field in self.inputs:
+            if (
+                mouse_x >= input_field.getPos().getX() and
+                mouse_x <= input_field.getPos().getX() + input_field.getWidth() and
+                mouse_y >= input_field.getPos().getY() and
+                mouse_y <= input_field.getPos().getY() + input_field.getHeight()
+            ):
+                continue
+            else:
+                input_field.setFocus()
+
+    def start_recording(self):
+        if not self.recording:
+            self.prev_pos = []
+            self.prev_hprs = []
+            for element in self.robot.get_children():
+                self.prev_pos.append(element.getPos())
+                self.prev_hprs.append(element.getHpr())
+            self.buttonRecord.setText("Zatrzymaj nagrywanie")
+            self.recording = True
+            self.record = []
+        else:
+            for i in range(len(self.prev_pos)):
+                self.robot.get_children()[i].setPos(self.prev_pos[i])
+                self.robot.get_children()[i].setHpr(self.prev_hprs[i])
+            self.buttonRecord.setText("Rozpocznij nagrywanie")
+            self.recording = False
+
+    def play(self):
+        if not self.recording and self.record != []:
+            self.task_mgr.doMethodLater(0.05,self.play_task,"play_task")
+                
+    def play_task(self,task):
+        try:
+            self.record[0]()
+            self.record.pop(0)
+        except:
+            self.task_mgr.remove("play_task")
+        return task.again
 
 simulation = RobotSimulation()
 simulation.run()
