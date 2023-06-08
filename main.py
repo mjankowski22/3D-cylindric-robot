@@ -22,9 +22,7 @@ class RobotSimulation(ShowBase):
         self.robot = self.loader.loadModel("Robot4.gltf")
         self.robot.reparentTo(self.render)
         self.robot.setPos(0, 0, 1)
-
-        print(self.robot.get_children())
-        
+     
         self.cone = self.robot.get_children()[0]
         self.cylinder = self.robot.get_children()[1]
         self.up_cylinder = self.robot.get_children()[2]
@@ -82,7 +80,8 @@ class RobotSimulation(ShowBase):
             frameSize=(-1, 1, -0.5, 0.5),  # Width and height of the button
             pos=(-1.21, 0, -0.7),  # Position of the button (upper-left corner)
             text_scale=0.4,  # Scaling of the button text
-            text_pos=(0, -0.05),  # Position of the text on the button
+            text_pos=(0, -0.05),
+            command = self.move # Position of the text on the button
         )
         self.buttonMove.setPos(-1.2, 0, -0.7)
 
@@ -119,6 +118,8 @@ class RobotSimulation(ShowBase):
         self.speed_expand =0.01
         self.speed_forward = 0.1
         
+        print(self.primitive.getPos())
+
         self.camera.set_pos(self.camera_r*math.cos(self.camera_t)*math.cos(self.camera_fi), self.camera_r*math.cos(self.camera_t)*math.sin(self.camera_fi), self.camera_r*math.sin(self.camera_t))  # Initial camera position
         self.camera.look_at(Point3(0, 0, 0))  # Look at the origin
         
@@ -458,6 +459,64 @@ class RobotSimulation(ShowBase):
         except:
             self.task_mgr.remove("play_task")
         return task.again
+    
+    def move(self):
+        try:
+            x = float(self.x_input.get())
+            y = float(self.y_input.get())
+            z = float(self.z_input.get())
+            self.r = math.sqrt(x**2+y**2)
+            self.fi = math.atan2(y,x) + math.pi
+            self.z = z
+            self.task_mgr.doMethodLater(0.07,self.move_task,"move_task")
+            self.flag = False
+        except:
+            pass
+    
+    def move_task(self,task):
+        
+        x,y,z = self.collector_base.getPos()[0],self.collector_base.getPos()[1],self.collector_base.getPos()[2]
+        r = math.sqrt(x**2+y**2)
+        fi = math.atan2(y,x)+math.pi
+        print(f"obecne: {z}")
+        print(self.z)
+        go_z =6
+        if z-go_z>0.12 and not self.flag:
+            self.move_down()
+            return task.again
+        elif z-go_z<-0.12 and not self.flag:
+            self.move_up()
+            return task.again
+        else:
+            self.flag=True
+        if r+0.55-self.r>0.12:
+            self.go_backward()
+            return task.again
+        elif r+0.55-self.r<-0.12:
+            self.go_forward()
+            return task.again
+        if abs(fi-self.fi)>0.021:
+            if fi-self.fi>math.pi:
+                self.robot_rotate_right()
+                return task.again
+            elif fi-self.fi<math.pi:
+                self.robot_rotate_left()
+                return task.again
+        if z-self.z>0.12:
+            self.move_down()
+            return task.again
+        elif z-self.z<-0.12:
+            self.move_up()
+            return task.again
+        
+        # elif abs(fi-self.fi)<0.037:
+        #     self.robot_rotate_right()
+        self.task_mgr.remove('move_task')
+
+    
+
+
+
 
 simulation = RobotSimulation()
 simulation.run()
