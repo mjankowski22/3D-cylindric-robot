@@ -444,12 +444,17 @@ class RobotSimulation(ShowBase):
 
     def play(self):
         if not self.recording and self.record != []:
-            self.task_mgr.doMethodLater(0.05,self.play_task,"play_task")
+        
+            for i in range(len(self.prev_pos)):
+                self.robot.get_children()[i].setPos(self.prev_pos[i])
+                self.robot.get_children()[i].setHpr(self.prev_hprs[i])
+            self.i=0
+            self.task_mgr.doMethodLater(0.07,self.play_task,"play_task")
                 
     def play_task(self,task):
         try:
-            self.record[0]()
-            self.record.pop(0)
+            self.record[self.i]()
+            self.i +=1
         except:
             self.task_mgr.remove("play_task")
         return task.again
