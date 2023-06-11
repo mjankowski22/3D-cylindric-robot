@@ -117,6 +117,7 @@ class RobotSimulation(ShowBase):
         self.speed_rotate = 0.02
         self.speed_expand =0.01
         self.speed_forward = 0.1
+        self.is_catched = False
         
         print(self.primitive.getPos())
 
@@ -201,25 +202,34 @@ class RobotSimulation(ShowBase):
     def move_up(self):
         if self.recording:
             self.record.append(self.move_up)
+        self.move_primitive()
         for element in self.to_move_up_down:
             pos = list(element.getPos())
             if pos[2]<=7.1 :
-                element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
+                if element==self.primitive:
+                    element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
+                else:
+                    element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)  
+                 
 
     def move_down(self):
         if self.recording:
             self.record.append(self.move_down)
-        if  not self.check_collision_with_barell_left() and not self.check_collision_with_barell_right() and not self.check_collision_with_table_left() and not self.check_collision_with_table_right() and not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle():
-            
-            for element in self.to_move_up_down:
-                pos = list(element.getPos())
-                if pos[2]>=1.9 :
+        self.move_primitive()
+        for element in self.to_move_up_down:
+            pos = list(element.getPos())
+            if pos[2]>=1.9 :
+                if element==self.primitive:
                     element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)
+                else:
+                    element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)  
+                
 
     def robot_rotate_left(self):
         if self.recording:
             self.record.append(self.robot_rotate_left)
-        if not self.check_collision_with_barell_left() and not self.check_collision_with_table_left() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle():
+        self.move_primitive()
+        if not self.check_collision_with_barell_left() and not self.check_collision_with_table_left() and(( not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle()) or (self.check_collision_with_primitive_left() and self.check_collision_with_primitive_right())) :
             
             for element in self.to_rotate:
                 pos = list(element.getPos())
@@ -232,7 +242,8 @@ class RobotSimulation(ShowBase):
     def robot_rotate_right(self):
         if self.recording:
             self.record.append(self.robot_rotate_right)
-        if not self.check_collision_with_barell_right() and not self.check_collision_with_table_right() and not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_middle():
+        self.move_primitive()
+        if not self.check_collision_with_barell_right() and not self.check_collision_with_table_right() and(( not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_middle()) or (self.check_collision_with_primitive_left() and self.check_collision_with_primitive_right())) :
             
             for element in self.to_rotate:
                 pos = list(element.getPos())
@@ -245,7 +256,8 @@ class RobotSimulation(ShowBase):
     def go_forward(self):
         if self.recording:
             self.record.append(self.go_forward)
-        if  not self.check_collision_with_barell_left() and not self.check_collision_with_barell_right() and not self.check_collision_with_table_left() and not self.check_collision_with_table_right() and not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle():
+        self.move_primitive()
+        if  not self.check_collision_with_barell_left() and not self.check_collision_with_barell_right() and not self.check_collision_with_table_left() and not self.check_collision_with_table_right() and (( not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle()) or (self.check_collision_with_primitive_left() and self.check_collision_with_primitive_right())):
             
             if math.sqrt(self.second_arm.getPos()[0]**2+ self.second_arm.getPos()[1]**2) <=5.8:
                 appends_left = [self.collector_left.getPos()[0]-self.collector_base.getPos()[0],self.collector_left.getPos()[1]-self.collector_base.getPos()[1]]
@@ -263,6 +275,7 @@ class RobotSimulation(ShowBase):
     def go_backward(self):
         if self.recording:
             self.record.append(self.go_backward)
+        self.move_primitive()
         appends_left = [self.collector_left.getPos()[0]-self.collector_base.getPos()[0],self.collector_left.getPos()[1]-self.collector_base.getPos()[1]]
         appends_right = [self.collector_right.getPos()[0]-self.collector_base.getPos()[0],self.collector_right.getPos()[1]-self.collector_base.getPos()[1]]
         if math.sqrt(self.second_arm.getPos()[0]**2+ self.second_arm.getPos()[1]**2) >=2.5:
@@ -290,6 +303,9 @@ class RobotSimulation(ShowBase):
             fi_c_r-=self.speed_expand
             self.collector_left.set_pos(r_c_l*math.cos(fi_c_l), r_c_l*math.sin(fi_c_l), pos_c_l[2])
             self.collector_right.set_pos(r_c_r*math.cos(fi_c_r), r_c_r*math.sin(fi_c_r), pos_c_r[2])
+        self.fall_primitive()
+
+        
 
             
     def reduce(self):
@@ -512,6 +528,50 @@ class RobotSimulation(ShowBase):
         # elif abs(fi-self.fi)<0.037:
         #     self.robot_rotate_right()
         self.task_mgr.remove('move_task')
+
+    def check_catch_primitive(self):
+        if self.check_collision_with_primitive_right() and self.check_collision_with_primitive_left():
+            return True
+        else:
+            self.is_catched = False
+            return False
+        
+    def set_to_move_primitive(self):
+        self.to_move_up_down.append(self.primitive)
+        self.to_rotate.append(self.primitive)
+        self.to_go_forward.append(self.primitive)
+        self.is_catched = True
+        
+    def stop_move_primitive(self):
+        self.to_move_up_down.remove(self.primitive)
+        self.to_rotate.remove(self.primitive)
+        self.to_go_forward.remove(self.primitive)
+
+        
+    def move_primitive(self):
+        if self.check_catch_primitive() and not self.is_catched:
+            self.set_to_move_primitive()
+    
+    def prepare_fall(self,task):
+        pos = list(self.primitive.getPos())
+        if pos[2] >= 0.4:
+            self.primitive.set_pos(pos[0],pos[1],pos[2] - 0.08)
+            return task.again
+        self.task_mgr.remove('prepare_fall')
+        
+
+    
+
+    def fall_primitive(self):
+        if self.is_catched and not self.check_catch_primitive():
+            self.stop_move_primitive()
+            self.task_mgr.doMethodLater(0.0001,self.prepare_fall,"prepare_fall")
+            
+            
+    
+        
+
+
 
     
 
