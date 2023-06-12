@@ -63,6 +63,17 @@ class RobotSimulation(ShowBase):
         )
         self.buttonPlay.setPos(1.23, 0, -0.9)
 
+        self.buttonPlay = DirectButton(text="Reset",
+            scale=0.1,
+            frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
+            frameSize=(-1, 1, -0.5, 0.5),  # Width and height of the button
+            pos=(-0.9, 0, 0.9),  # Position of the button (upper-left corner)
+            text_scale=0.4,  # Scaling of the button text
+            text_pos=(0, -0.05),
+            command=self.reset
+        )
+        self.buttonPlay.setPos(1.0, 0, -0.9)
+
         self.buttonReset = DirectButton(text="Reset kamery",
             scale=0.1,
             frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
@@ -528,6 +539,12 @@ class RobotSimulation(ShowBase):
         # elif abs(fi-self.fi)<0.037:
         #     self.robot_rotate_right()
         self.task_mgr.remove('move_task')
+
+    def reset(self):
+        self.primitive.set_pos(2.1 ,7, 4.6)
+        self.is_catched = False
+        self.stop_move_primitive()
+
 
     def check_catch_primitive(self):
         if self.check_collision_with_primitive_right() and self.check_collision_with_primitive_left():
