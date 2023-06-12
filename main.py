@@ -202,7 +202,7 @@ class RobotSimulation(ShowBase):
     def move_up(self):
         if self.recording:
             self.record.append(self.move_up)
-        self.move_primitive()
+        self.move_primitive()        
         for element in self.to_move_up_down:
             pos = list(element.getPos())
             if pos[2]<=7.1 :
@@ -551,9 +551,32 @@ class RobotSimulation(ShowBase):
     def move_primitive(self):
         if self.check_catch_primitive() and not self.is_catched:
             self.set_to_move_primitive()
+
+    def check_collision_with_barell_primitive(self):
+
+        prim_x,prim_y,prim_z = self.primitive.getPos()[0],self.primitive.getPos()[1],self.primitive.getPos()[2]
+        prim_r = math.sqrt(prim_x**2+prim_y**2)
+        prim_fi = math.atan2(prim_y,prim_x)
+        prim_r +=0.6
+        prim_x = prim_r*math.cos(prim_fi)
+        prim_y = prim_r*math.sin(prim_fi)
+        if (prim_x - 2)**2 + (prim_y+8)**2 <= 2**2 and prim_z<6.3:
+            return True
+        else:
+            return False
     
     def prepare_fall(self,task):
         pos = list(self.primitive.getPos())
+        prim_x,prim_y,prim_z = self.primitive.getPos()[0],self.primitive.getPos()[1],self.primitive.getPos()[2]
+        prim_r = math.sqrt(prim_x**2+prim_y**2)
+        prim_fi = math.atan2(prim_y,prim_x)
+        prim_r +=0.6
+        prim_x = prim_r*math.cos(prim_fi)
+        prim_y = prim_r*math.sin(prim_fi)
+        if (prim_x - 2)**2 + (prim_y+8)**2 <= 2**2 and prim_z<6.5:
+            self.task_mgr.remove('prepare_fall')
+        if (prim_x - 2)**2 + (prim_y-9)**2 <= 3**2 and prim_z<4.6:
+            self.task_mgr.remove('prepare_fall')
         if pos[2] >= 0.4:
             self.primitive.set_pos(pos[0],pos[1],pos[2] - 0.08)
             return task.again
