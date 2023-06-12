@@ -130,7 +130,8 @@ class RobotSimulation(ShowBase):
         self.speed_forward = 0.1
         self.is_catched = False
         
-        print(self.primitive.getPos())
+        print(f" Pozycja pilki: {self.primitive.getPos()}")
+        print(f" Pozycja beczki: 2 -8 6.4")
 
         self.camera.set_pos(self.camera_r*math.cos(self.camera_t)*math.cos(self.camera_fi), self.camera_r*math.cos(self.camera_t)*math.sin(self.camera_fi), self.camera_r*math.sin(self.camera_t))  # Initial camera position
         self.camera.look_at(Point3(0, 0, 0))  # Look at the origin
@@ -213,27 +214,29 @@ class RobotSimulation(ShowBase):
     def move_up(self):
         if self.recording:
             self.record.append(self.move_up)
-        self.move_primitive()        
-        for element in self.to_move_up_down:
-            pos = list(element.getPos())
-            if pos[2]<=7.1 :
-                if element==self.primitive:
-                    element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
-                else:
-                    element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)  
+        self.move_primitive()
+        if not self.check_collision_with_table_bottom():
+            for element in self.to_move_up_down:
+                pos = list(element.getPos())
+                if pos[2]<=7.1 :
+                    if element==self.primitive:
+                        element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
+                    else:
+                        element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)  
                  
 
     def move_down(self):
         if self.recording:
             self.record.append(self.move_down)
         self.move_primitive()
-        for element in self.to_move_up_down:
-            pos = list(element.getPos())
-            if pos[2]>=1.9 :
-                if element==self.primitive:
-                    element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)
-                else:
-                    element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)  
+        if not self.check_collision_with_barell_left() and not self.check_collision_with_barell_right() and not self.check_collision_with_table_top()  and (( not self.check_collision_with_primitive_right() and not self.check_collision_with_primitive_left() and not self.check_collision_with_primitive_middle()) or (self.check_collision_with_primitive_left() and self.check_collision_with_primitive_right())):
+            for element in self.to_move_up_down:
+                pos = list(element.getPos())
+                if pos[2]>=1.9 :
+                    if element==self.primitive:
+                        element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)
+                    else:
+                        element.set_pos(pos[0],pos[1],pos[2]-self.speed_up)  
                 
 
     def robot_rotate_left(self):
@@ -387,6 +390,14 @@ class RobotSimulation(ShowBase):
         else:
             return False
         
+    def check_collision_with_table_bottom(self):
+        if self.check_collision_with_table_left() and self.check_collision_with_table_right() and self.collector_right.getPos()[2]<=3.9 and self.collector_right.getPos()[2]>=3.4:
+            return True
+    
+    def check_collision_with_table_top(self):
+        if self.check_collision_with_table_left() and self.check_collision_with_table_right() and self.collector_right.getPos()[2]>=3.9 and self.collector_right.getPos()[2]<=4.4:
+            return True
+        
     def check_collision_with_primitive_left(self):
         left_x,left_y,left_z = self.collector_left.getPos()[0],self.collector_left.getPos()[1],self.collector_left.getPos()[2]
         left_r = math.sqrt(left_x**2+left_y**2)
@@ -505,9 +516,7 @@ class RobotSimulation(ShowBase):
         x,y,z = self.collector_base.getPos()[0],self.collector_base.getPos()[1],self.collector_base.getPos()[2]
         r = math.sqrt(x**2+y**2)
         fi = math.atan2(y,x)+math.pi
-        print(f"obecne: {z}")
-        print(self.z)
-        go_z =6
+        go_z =7.1
         if z-go_z>0.12 and not self.flag:
             self.move_down()
             return task.again
@@ -523,10 +532,10 @@ class RobotSimulation(ShowBase):
             self.go_forward()
             return task.again
         if abs(fi-self.fi)>0.021:
-            if fi-self.fi>math.pi:
+            if fi>self.fi:
                 self.robot_rotate_right()
                 return task.again
-            elif fi-self.fi<math.pi:
+            else:
                 self.robot_rotate_left()
                 return task.again
         if z-self.z>0.12:
