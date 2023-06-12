@@ -52,6 +52,17 @@ class RobotSimulation(ShowBase):
         )
         self.buttonRecord.setPos(1.1, 0, 0.9)
 
+        self.buttonRecord = DirectButton(text="Help",
+            scale=0.1,
+            frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
+            frameSize=(-1,1, -0.5, 0.5),  # Width and height of the button
+            pos=(-0.9, 0, 0.9),  # Position of the button (upper-left corner)
+            text_scale=0.4,  # Scaling of the button text
+            text_pos=(0, -0.05),
+            command=self.help_instruction  # Position of the text on the button
+        )
+        self.buttonRecord.setPos(0.7, 0, 0.9)
+
         self.buttonPlay = DirectButton(text="Odtworz",
             scale=0.1,
             frameColor=(0.4, 0.6, 0.8, 1),  # RGBA values for the frame color
@@ -95,6 +106,7 @@ class RobotSimulation(ShowBase):
             command = self.move # Position of the text on the button
         )
         self.buttonMove.setPos(-1.2, 0, -0.7)
+
 
         self.x_input = DirectEntry(
             scale=0.06,
@@ -552,8 +564,13 @@ class RobotSimulation(ShowBase):
     def reset(self):
         self.primitive.set_pos(2.1 ,7, 4.6)
         self.is_catched = False
-        self.stop_move_primitive()
+        try:
+            self.stop_move_primitive()
+        except ValueError:
+            pass
 
+    def help_instruction(self):
+        pass
 
     def check_catch_primitive(self):
         if self.check_collision_with_primitive_right() and self.check_collision_with_primitive_left():
