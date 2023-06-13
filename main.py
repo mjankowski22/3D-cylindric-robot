@@ -22,6 +22,7 @@ class RobotSimulation(ShowBase):
         self.robot = self.loader.loadModel("Robot4.gltf")
         self.robot.reparentTo(self.render)
         self.robot.setPos(0, 0, 1)
+
      
         self.cone = self.robot.get_children()[0]
         self.cylinder = self.robot.get_children()[1]
@@ -37,9 +38,11 @@ class RobotSimulation(ShowBase):
         self.to_rotate = [self.collector_base,self.collector_right,self.collector_left,self.first_arm,self.second_arm]
         self.to_go_forward = [self.collector_base,self.second_arm]
         self.to_expand = [self.collector_left,self.collector_right]
-        
         self.record = []
         self.recording = False
+
+        
+        self.mySound = self.loader.loadSfx("Fail.mp3")
 
         self.buttonRecord = DirectButton(text="Rozpocznij nagrywanie",
             scale=0.1,
@@ -570,7 +573,26 @@ class RobotSimulation(ShowBase):
             pass
 
     def help_instruction(self):
-        pass
+        self.dialog = DirectDialog(frameSize=(-0.8, 0.8, -0.8, 0.8),
+                                    pos=(0, 0, 0),
+                                    fadeScreen=0.8,
+                                    relief=DGG.RAISED,
+                                    borderWidth=(0.05, 0.05))
+            
+        self.message = DirectLabel(parent=self.dialog,
+                                    text="INSTRUCTION\n \n 1. Robot Control \n \n W -> Move up \n S -> Move down \n A -> Rotate left \n D -> Rotate right \n Q -> Go forward \n E -> Go backward \n R -> Extend Collector \n T -> Reduce Collector \n \n 2. Camera Control \n \n Arrow up -> Move up \n Arrow down -> Move down \n Arrow right -> Rotate right \n Arrow left -> Rotate left \n . -> Zoom out \n , -> Zoom in" ,
+                                    scale=0.06,
+                                    pos=(0, 0, 0.7))
+        self.button = DirectButton(parent=self.dialog,
+                                   text="Close",
+                                   scale=0.08,
+                                   command=self.closeDialog,
+                                   pos=(0, 0, -0.7))
+
+    def closeDialog(self):
+        if self.dialog:
+            self.dialog.destroy()
+            self.dialog = None
 
     def check_catch_primitive(self):
         if self.check_collision_with_primitive_right() and self.check_collision_with_primitive_left():
@@ -624,6 +646,9 @@ class RobotSimulation(ShowBase):
             self.primitive.set_pos(pos[0],pos[1],pos[2] - 0.08)
             return task.again
         self.task_mgr.remove('prepare_fall')
+        self.mySound.setVolume(1)
+        self.mySound.play()
+        
         
 
     
