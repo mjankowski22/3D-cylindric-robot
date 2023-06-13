@@ -102,9 +102,9 @@ class RobotSimulation(ShowBase):
         )
         self.buttonMove.setPos(-1.2, 0, -0.7)
 
-        self.buttonRecord = DirectButton(text="Help",scale=0.1,frameColor=(0.4, 0.6, 0.8, 1),
+        self.buttonHelp = DirectButton(text="Help",scale=0.1,frameColor=(0.4, 0.6, 0.8, 1),
         frameSize=(-1,1, -0.5, 0.5),pos=(-0.9, 0, 0.9),text_scale=0.4,text_pos=(0, -0.05),command=self.help_instruction)
-        self.buttonRecord.setPos(0.7, 0, 0.9)
+        self.buttonHelp.setPos(0.7, 0, 0.9)
 
 
         self.x_input = DirectEntry(
