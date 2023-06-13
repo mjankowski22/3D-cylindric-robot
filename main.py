@@ -102,6 +102,10 @@ class RobotSimulation(ShowBase):
         )
         self.buttonMove.setPos(-1.2, 0, -0.7)
 
+        self.buttonRecord = DirectButton(text="Help",scale=0.1,frameColor=(0.4, 0.6, 0.8, 1),
+        frameSize=(-1,1, -0.5, 0.5),pos=(-0.9, 0, 0.9),text_scale=0.4,text_pos=(0, -0.05),command=self.help_instruction)
+        self.buttonRecord.setPos(0.7, 0, 0.9)
+
 
         self.x_input = DirectEntry(
             scale=0.06,
@@ -814,9 +818,10 @@ class RobotSimulation(ShowBase):
             self.primitive.set_pos(pos[0],pos[1],pos[2] - 0.08)
             return task.again
         self.task_mgr.remove('prepare_fall')
+        self.mySound.setVolume(1)
+        self.mySound.play()
         
 
-    
 
     def fall_primitive(self):
         if self.is_catched and not self.check_catch_primitive():
