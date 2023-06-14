@@ -102,7 +102,7 @@ class RobotSimulation(ShowBase):
         )
         self.buttonMove.setPos(-1.2, 0, -0.7)
 
-        self.buttonHelp = DirectButton(text="Help",scale=0.1,frameColor=(0.4, 0.6, 0.8, 1),
+        self.buttonHelp= DirectButton(text="Help",scale=0.1,frameColor=(0.4, 0.6, 0.8, 1),
         frameSize=(-1,1, -0.5, 0.5),pos=(-0.9, 0, 0.9),text_scale=0.4,text_pos=(0, -0.05),command=self.help_instruction)
         self.buttonHelp.setPos(0.7, 0, 0.9)
 
@@ -312,7 +312,7 @@ class RobotSimulation(ShowBase):
         if not self.check_collision_with_table_bottom():
             for element in self.to_move_up_down:
                 pos = list(element.getPos())
-                if pos[2]<=7.1 :
+                if pos[2]<=7.2 :
                     if element==self.primitive:
                         element.set_pos(pos[0],pos[1],pos[2]+self.speed_up)
                     else:
@@ -702,7 +702,7 @@ class RobotSimulation(ShowBase):
         x,y,z = self.collector_base.getPos()[0],self.collector_base.getPos()[1],self.collector_base.getPos()[2]
         r = math.sqrt(x**2+y**2)
         fi = math.atan2(y,x)+math.pi
-        go_z =7.1
+        go_z =7.2
         if z-go_z>0.12 and not self.flag:
             self.move_down_task('')
             return task.again
@@ -743,6 +743,10 @@ class RobotSimulation(ShowBase):
         except ValueError:
             pass
 
+
+    
+
+    #Help instructions and button
     def help_instruction(self):
         self.dialog = DirectDialog(frameSize=(-0.8, 0.8, -0.8, 0.8),
                                     pos=(0, 0, 0),
